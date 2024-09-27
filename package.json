@@ -1,6 +1,6 @@
 {
   "name": "ig-images-carousel",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A customizable Instagram carousel for websites",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -26,6 +26,10 @@
     "@rollup/plugin-babel": "^5.3.1",
     "@rollup/plugin-node-resolve": "^13.3.0",
     "rollup": "^2.79.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ignacioainol/ig-images-carousel"
   },
   "files": [
     "dist"
