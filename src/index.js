@@ -100,6 +100,7 @@ const loadInstagramImages = async () => {
 };
 
 export function initInstagramCarousel(options = {}) {
+  let igName = options.igName || igTag.getAttribute('data-ig-name');
   const igTag = document.getElementById('instagram-area');
   let autoSlideInterval;
 
@@ -152,18 +153,27 @@ export function initInstagramCarousel(options = {}) {
   const sliderPrev = document.querySelector('.slider-arrow--prev');
 
   const slideCarousel = (direction) => {
-    const maxPosition =
-      (carousel.children.length - maxVisibleSlides) * slideWidth;
+    const totalWidth = carousel.children.length * slideWidth;
+    const visibleWidth =
+      document.querySelector('.instagram-slider').offsetWidth;
+    const maxPosition = Math.max(totalWidth - visibleWidth, 0); // Asegura que no haya valores negativos
 
     if (direction === 'next') {
       if (currentPosition < maxPosition) {
-        currentPosition += slideWidth;
+        currentPosition = Math.min(currentPosition + slideWidth, maxPosition);
+      } else {
+        // Si llegamos al final, volvemos al principio
+        currentPosition = 0;
       }
     } else {
       if (currentPosition > 0) {
         currentPosition -= slideWidth;
+      } else {
+        // Si estamos al principio y vamos hacia atrás, saltamos al final
+        currentPosition = maxPosition;
       }
     }
+
     carousel.style.transform = `translateX(-${currentPosition}px)`;
   };
 
@@ -192,7 +202,6 @@ export function initInstagramCarousel(options = {}) {
 
   longLivedAccessToken =
     options.longLivedAccessToken || igTag.getAttribute('data-ig-token');
-  let igName = options.igName || igTag.getAttribute('data-ig-name');
 
   if (!longLivedAccessToken || !igName) {
     console.error('Access token or Instagram name not provided');

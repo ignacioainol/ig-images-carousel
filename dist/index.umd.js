@@ -428,6 +428,7 @@
   }();
   function initInstagramCarousel() {
     var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+    var igName = options.igName || igTag.getAttribute('data-ig-name');
     var igTag = document.getElementById('instagram-area');
     var autoSlideInterval;
     loadCSS('./src/ig-style.css', 'https://services.crossvillefabric.com/test/ig-style.css');
@@ -458,18 +459,27 @@
     loadInstagramImages();
     var currentPosition = 0;
     var slideWidth = 250 + 24;
-    var maxVisibleSlides = Math.floor(document.querySelector('.instagram-slider').offsetWidth / slideWidth);
+    Math.floor(document.querySelector('.instagram-slider').offsetWidth / slideWidth);
     var sliderNext = document.querySelector('.slider-arrow--next');
     var sliderPrev = document.querySelector('.slider-arrow--prev');
     var slideCarousel = function slideCarousel(direction) {
-      var maxPosition = (carousel.children.length - maxVisibleSlides) * slideWidth;
+      var totalWidth = carousel.children.length * slideWidth;
+      var visibleWidth = document.querySelector('.instagram-slider').offsetWidth;
+      var maxPosition = Math.max(totalWidth - visibleWidth, 0); // Asegura que no haya valores negativos
+
       if (direction === 'next') {
         if (currentPosition < maxPosition) {
-          currentPosition += slideWidth;
+          currentPosition = Math.min(currentPosition + slideWidth, maxPosition);
+        } else {
+          // Si llegamos al final, volvemos al principio
+          currentPosition = 0;
         }
       } else {
         if (currentPosition > 0) {
           currentPosition -= slideWidth;
+        } else {
+          // Si estamos al principio y vamos hacia atrás, saltamos al final
+          currentPosition = maxPosition;
         }
       }
       carousel.style.transform = "translateX(-".concat(currentPosition, "px)");
@@ -503,7 +513,6 @@
       return;
     }
     longLivedAccessToken = options.longLivedAccessToken || igTag.getAttribute('data-ig-token');
-    var igName = options.igName || igTag.getAttribute('data-ig-name');
     if (!longLivedAccessToken || !igName) {
       console.error('Access token or Instagram name not provided');
       return;

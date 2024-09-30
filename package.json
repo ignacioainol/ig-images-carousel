@@ -1,6 +1,6 @@
 {
   "name": "ig-images-carousel",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "A customizable Instagram carousel for websites",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
