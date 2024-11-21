@@ -60,7 +60,7 @@ const displayInstagramImages = ({ data }) => {
       logo.src = './src/ig-logo.png';
 
       logo.onerror = function () {
-        logo.src = 'https://services.crossvillefabric.com/test/ig-logo2.png';
+        logo.src = 'https://celadon-buttercream-cd5d38.netlify.app/ig-logo.png';
       };
 
       logo.alt = 'Logo';
@@ -106,7 +106,7 @@ export function initInstagramCarousel(options = {}) {
 
   loadCSS(
     './src/ig-style.css',
-    'https://services.crossvillefabric.com/test/ig-style.css'
+    'https://celadon-buttercream-cd5d38.netlify.app/ig-style.css'
   );
 
   const heading = document.createElement('h3');
