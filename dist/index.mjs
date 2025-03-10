@@ -325,7 +325,6 @@ function _regeneratorRuntime() {
   }, e;
 }
 
-var longLivedAccessToken;
 var loadCSS = function loadCSS(path, fallbackPath) {
   var link = document.createElement('link');
   link.rel = 'stylesheet';
@@ -341,8 +340,8 @@ var loadCSS = function loadCSS(path, fallbackPath) {
   };
   document.head.appendChild(link);
 };
-var fetchInstagramImages = function fetchInstagramImages(accessToken) {
-  var url = "https://graph.instagram.com/me/media?fields=caption,id,media_type,media_url,permalink,thumbnail_url,timestamp,username&access_token=".concat(accessToken);
+var fetchInstagramImages = function fetchInstagramImages(longLivedAccessToken, instagramId) {
+  var url = "https://graph.facebook.com/v22.0/".concat(instagramId, "/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=").concat(longLivedAccessToken);
   return fetch(url, {
     method: 'GET'
   }).then(function (response) {
@@ -371,10 +370,11 @@ var displayInstagramImages = function displayInstagramImages(_ref) {
       img.src = item.media_url;
       img.alt = item.caption || 'Instagram Image';
       img.style.width = '100%';
+      img.style.height = '250px';
       var logo = document.createElement('img');
       logo.src = './src/ig-logo.png';
       logo.onerror = function () {
-        logo.src = 'https://services.crossvillefabric.com/test/ig-logo2.png';
+        logo.src = 'https://celadon-buttercream-cd5d38.netlify.app/ig-logo.png';
       };
       logo.alt = 'Logo';
       logo.classList.add('hover-logo');
@@ -384,48 +384,38 @@ var displayInstagramImages = function displayInstagramImages(_ref) {
     }
   });
 };
-var refreshAccessToken = function refreshAccessToken() {
-  var url = "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=".concat(longLivedAccessToken);
-  return fetch(url, {
-    method: 'GET'
-  }).then(function (response) {
-    return response.json();
-  }).then(function (data) {
-    console.log(data);
-    longLivedAccessToken = data.access_token;
-    console.log('Token refreshed. New Long-Lived Access Token:', longLivedAccessToken);
-    return longLivedAccessToken;
-  })["catch"](function (error) {
-    console.error('Error refreshing the token:', error);
-  });
-};
 var loadInstagramImages = /*#__PURE__*/function () {
-  var _ref2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-    var refreshedToken;
+  var _ref2 = _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee(token, id) {
     return _regeneratorRuntime().wrap(function _callee$(_context) {
       while (1) switch (_context.prev = _context.next) {
         case 0:
-          _context.next = 2;
-          return refreshAccessToken();
-        case 2:
-          refreshedToken = _context.sent;
-          fetchInstagramImages(refreshedToken);
-        case 4:
+          fetchInstagramImages(token, id);
+        case 1:
         case "end":
           return _context.stop();
       }
     }, _callee);
   }));
-  return function loadInstagramImages() {
+  return function loadInstagramImages(_x, _x2) {
     return _ref2.apply(this, arguments);
   };
 }();
 function initInstagramCarousel() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  var igName = options.igName || igTag.getAttribute('data-ig-name');
   var igTag = document.getElementById('instagram-area');
+  if (!igTag) {
+    console.error('Element with id "instagram-area" not found');
+    return;
+  }
+  var igName = options.igName || igTag.getAttribute('data-ig-name');
+  var instagramId = options.instagramId || igTag.getAttribute('data-ig-id');
+  var longLivedAccessToken = options.longLivedAccessToken || igTag.getAttribute('data-ig-token');
   var autoSlideInterval;
-  loadCSS('./src/ig-style.css', 'https://services.crossvillefabric.com/test/ig-style.css');
+  if (!longLivedAccessToken || !igName || !instagramId) {
+    console.error('Access token, Instagram name or Instagram ID not provided');
+    return;
+  }
+  loadCSS('./src/ig-style.css', 'https://celadon-buttercream-cd5d38.netlify.app/ig-style.css');
   var heading = document.createElement('h3');
   heading.setAttribute('role', 'heading');
   heading.setAttribute('aria-level', '3');
@@ -450,7 +440,6 @@ function initInstagramCarousel() {
   sliderContainer.appendChild(nextButton);
   igTag.appendChild(heading);
   igTag.appendChild(sliderContainer);
-  loadInstagramImages();
   var currentPosition = 0;
   var slideWidth = 250 + 24;
   Math.floor(document.querySelector('.instagram-slider').offsetWidth / slideWidth);
@@ -459,20 +448,17 @@ function initInstagramCarousel() {
   var slideCarousel = function slideCarousel(direction) {
     var totalWidth = carousel.children.length * slideWidth;
     var visibleWidth = document.querySelector('.instagram-slider').offsetWidth;
-    var maxPosition = Math.max(totalWidth - visibleWidth, 0); // Asegura que no haya valores negativos
-
+    var maxPosition = Math.max(totalWidth - visibleWidth, 0);
     if (direction === 'next') {
       if (currentPosition < maxPosition) {
         currentPosition = Math.min(currentPosition + slideWidth, maxPosition);
       } else {
-        // Si llegamos al final, volvemos al principio
         currentPosition = 0;
       }
     } else {
       if (currentPosition > 0) {
         currentPosition -= slideWidth;
       } else {
-        // Si estamos al principio y vamos hacia atrás, saltamos al final
         currentPosition = maxPosition;
       }
     }
@@ -502,30 +488,17 @@ function initInstagramCarousel() {
   });
   sliderPrev.addEventListener('mouseup', stopAutoSlide);
   sliderPrev.addEventListener('mouseleave', stopAutoSlide);
-  if (!igTag) {
-    console.error('Element with id "instagram-area" not found');
-    return;
-  }
-  longLivedAccessToken = options.longLivedAccessToken || igTag.getAttribute('data-ig-token');
-  if (!longLivedAccessToken || !igName) {
-    console.error('Access token or Instagram name not provided');
-    return;
-  }
 
   // Inicialización
   function initialize() {
-    loadInstagramImages();
+    loadInstagramImages(longLivedAccessToken, instagramId);
   }
-
-  // Ejecutar la inicialización cuando el DOM esté listo
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize);
   } else {
     initialize();
   }
 }
-
-// Si estamos en un entorno de navegador, exponemos la función globalmente
 if (typeof window !== 'undefined') {
   window.initInstagramCarousel = initInstagramCarousel;
 }

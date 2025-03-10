@@ -1,5 +1,3 @@
-let longLivedAccessToken;
-
 const loadCSS = (path, fallbackPath) => {
   const link = document.createElement('link');
   link.rel = 'stylesheet';
@@ -20,8 +18,8 @@ const loadCSS = (path, fallbackPath) => {
   document.head.appendChild(link);
 };
 
-const fetchInstagramImages = (accessToken) => {
-  const url = `https://graph.instagram.com/me/media?fields=caption,id,media_type,media_url,permalink,thumbnail_url,timestamp,username&access_token=${accessToken}`;
+const fetchInstagramImages = (longLivedAccessToken, instagramId) => {
+  const url = `https://graph.facebook.com/v22.0/${instagramId}/media?fields=id,caption,media_type,media_url,permalink,timestamp&access_token=${longLivedAccessToken}`;
 
   return fetch(url, {
     method: 'GET',
@@ -55,6 +53,7 @@ const displayInstagramImages = ({ data }) => {
       img.src = item.media_url;
       img.alt = item.caption || 'Instagram Image';
       img.style.width = '100%';
+      img.style.height = '250px';
 
       const logo = document.createElement('img');
       logo.src = './src/ig-logo.png';
@@ -73,36 +72,27 @@ const displayInstagramImages = ({ data }) => {
   });
 };
 
-const refreshAccessToken = () => {
-  const url = `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${longLivedAccessToken}`;
-
-  return fetch(url, {
-    method: 'GET',
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      console.log(data);
-      longLivedAccessToken = data.access_token;
-      console.log(
-        'Token refreshed. New Long-Lived Access Token:',
-        longLivedAccessToken
-      );
-      return longLivedAccessToken;
-    })
-    .catch((error) => {
-      console.error('Error refreshing the token:', error);
-    });
-};
-
-const loadInstagramImages = async () => {
-  const refreshedToken = await refreshAccessToken();
-  fetchInstagramImages(refreshedToken);
+const loadInstagramImages = async (token, id) => {
+  fetchInstagramImages(token, id);
 };
 
 export function initInstagramCarousel(options = {}) {
-  let igName = options.igName || igTag.getAttribute('data-ig-name');
   const igTag = document.getElementById('instagram-area');
+  if (!igTag) {
+    console.error('Element with id "instagram-area" not found');
+    return;
+  }
+
+  let igName = options.igName || igTag.getAttribute('data-ig-name');
+  let instagramId = options.instagramId || igTag.getAttribute('data-ig-id');
+  let longLivedAccessToken =
+    options.longLivedAccessToken || igTag.getAttribute('data-ig-token');
   let autoSlideInterval;
+
+  if (!longLivedAccessToken || !igName || !instagramId) {
+    console.error('Access token, Instagram name or Instagram ID not provided');
+    return;
+  }
 
   loadCSS(
     './src/ig-style.css',
@@ -141,7 +131,6 @@ export function initInstagramCarousel(options = {}) {
 
   igTag.appendChild(heading);
   igTag.appendChild(sliderContainer);
-  loadInstagramImages();
 
   let currentPosition = 0;
   const slideWidth = 250 + 24;
@@ -156,20 +145,18 @@ export function initInstagramCarousel(options = {}) {
     const totalWidth = carousel.children.length * slideWidth;
     const visibleWidth =
       document.querySelector('.instagram-slider').offsetWidth;
-    const maxPosition = Math.max(totalWidth - visibleWidth, 0); // Asegura que no haya valores negativos
+    const maxPosition = Math.max(totalWidth - visibleWidth, 0);
 
     if (direction === 'next') {
       if (currentPosition < maxPosition) {
         currentPosition = Math.min(currentPosition + slideWidth, maxPosition);
       } else {
-        // Si llegamos al final, volvemos al principio
         currentPosition = 0;
       }
     } else {
       if (currentPosition > 0) {
         currentPosition -= slideWidth;
       } else {
-        // Si estamos al principio y vamos hacia atrás, saltamos al final
         currentPosition = maxPosition;
       }
     }
@@ -195,25 +182,12 @@ export function initInstagramCarousel(options = {}) {
   sliderPrev.addEventListener('mousedown', () => startAutoSlide('prev'));
   sliderPrev.addEventListener('mouseup', stopAutoSlide);
   sliderPrev.addEventListener('mouseleave', stopAutoSlide);
-  if (!igTag) {
-    console.error('Element with id "instagram-area" not found');
-    return;
-  }
-
-  longLivedAccessToken =
-    options.longLivedAccessToken || igTag.getAttribute('data-ig-token');
-
-  if (!longLivedAccessToken || !igName) {
-    console.error('Access token or Instagram name not provided');
-    return;
-  }
 
   // Inicialización
   function initialize() {
-    loadInstagramImages();
+    loadInstagramImages(longLivedAccessToken, instagramId);
   }
 
-  // Ejecutar la inicialización cuando el DOM esté listo
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initialize);
   } else {
@@ -221,7 +195,6 @@ export function initInstagramCarousel(options = {}) {
   }
 }
 
-// Si estamos en un entorno de navegador, exponemos la función globalmente
 if (typeof window !== 'undefined') {
   window.initInstagramCarousel = initInstagramCarousel;
 }
